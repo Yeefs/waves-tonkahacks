@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <%- include ("../partials/header.ejs") %>
+
+  <link rel="stylesheet" type="text/css" href="/stylesheets/chat.css" />
+
+    <script>
+      let socket = io();
+      let el;
+      let messageBox;
+      let option = {scroll: true};
+
+      socket.on('time', (timeString) => {
+        el = document.getElementById('server-time');
+        el.innerHTML = 'Server time: ' + timeString;
+      });
+
+      function avatarPart(pfp) {
+        let ret = document.createElement("div");
+        ret.setAttribute("class", "profile-icon invisible");
+        let ret2 = document.createElement("i");
+        ret2.setAttribute("class", pfp);
+        ret.appendChild(ret2);
+
+        return ret;
+
+        //<div class="profile-icon">
+        //<i src="https://i.pinimg.com/474x/1a/09/3a/1a093a141eeecc720c24543f2c63eb8d.jpg"></i>
+        //</div>
+      }
+
+      function messagePart(sender, time, message) {
+        let ret = document.createElement("div");
+        ret.setAttribute("class", "content invisible");
+        let ret2 = document.createElement("b");
+        ret2.setAttribute("title", time);
+        ret2.innerText = sender;
+        ret.appendChild(document.createElement("p"));
+        ret.firstElementChild.appendChild(ret2);
+        ret.firstElementChild.appendChild(document.createElement("br"));
+        ret.firstElementChild.append(message);
+        return ret;
+
+        //<div class="content">
+        //  <p>
+        //    <b title="${time}">${sender}</b>
+        //    <br>
+        //    ${message}
+        //  </p>
+        //</div>
+
+      }
+
+      function showArrow(bool) {
+        document.getElementById("send-message-button").childNodes[0].setAttribute(`class`,`far fa-arrow-alt-circle-right ${bool ? 'send-enabled' : ''}`);
+      }
+
+      socket.on('message', (sender, time, message) => {
+
+        box = document.getElementById('chat-message-column');
+
+        let newMessage = document.createElement("div");
+        newMessage.setAttribute("class", "message");
+        newMessage.appendChild(avatarPart(""));
+        //newMessage.appendChild(avatarPart("https://i.pinimg.com/474x/1a/09/3a/1a093a141eeecc720c24543f2c63eb8d.jpg"));
+        newMessage.appendChild(messagePart(sender, time, message));
+
+        let content = newMessage.getElementsByClassName('content')[0];
+        let contentText = content.getElementsByClassName('text')[0];
+        let profileIcon = newMessage.getElementsByClassName('profile-icon')[0];
+
+        box.appendChild(newMessage);
+
+        if (option.scroll) {
+          newMessage.scrollIntoView();
+        }
+
+        setTimeout(() => {
+          profileIcon.setAttribute("class", "profile-icon");
+          setTimeout(() => {
+            content.setAttribute("class", "content");
+            //setTimeout(() => {
+              //animateMessageLetters(message, isReceived);
+              //setTimeout(() => replenishLetterPool(STATE.nLetterSets), 2500);
+            //}, 1000);
+          }, 250);
+        }, 250);
+
+      });
+
+      function keyPressCheck(e) {
+        messageBox = document.getElementById("message-input-field");
+        if (messageBox.value.length != 0) {
+            //Change Button Color To Blue/Gray
+            showArrow(true);
+            if (e.key == 'Enter') {
+                sendMessage();
+            }
+        } else {
+            showArrow(false);
+        }
+      }
+
+      function sendMessage() {
+        socket.emit('message', messageBox.value);
+        messageBox.value = "";
+        showArrow(false);
+      }
+
+    </script>
+
+</head>
+
+<body>
+
+  <%- include ("../partials/nav.ejs") %>
+<div id="chat-message-window">
+    <div class="scroll-bar" id="chat-message-column-wrapper">
+        <div class="static" id="chat-message-column">
+
+        </div>
+
+    </div>
+    <br>
+    <div id="message-input-wrapper">
+        <div id="message-input">
+            <input id="message-input-field" placeholder="Message..." onload= 'messageBox = document.getElementById("message-input-field");' onkeypress="keyPressCheck(event);"></input>
+            <div id="send-message-button" onclick="sendMessage()"><i class="far fa-arrow-alt-circle-right"></i></div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

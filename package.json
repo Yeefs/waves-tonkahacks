@@ -1,0 +1,33 @@
+{
+  "name": "web-norm",
+  "version": "0.3.0",
+  "description": "A sample Node.js app using Express 4",
+  "engines": {
+    "node": "14.x"
+  },
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "ejs": "^3.1.6",
+    "express": "^4.17.1",
+    "socket.io": "^3.1.2"
+  },
+  "devDependencies": {
+    "got": "^11.8.3",
+    "tape": "^4.14.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/heroku/node-js-getting-started"
+  },
+  "keywords": [
+    "node",
+    "heroku",
+    "express",
+    "socket.io"
+  ],
+  "license": "MIT"
+}
