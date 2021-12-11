@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <%- include ("../partials/header.ejs") %>
+
+  <link rel="stylesheet" type="text/css" href="/stylesheets/app.css" />
+
+    <script>
+
+      const socket = io();
+      const app = new PIXI.Application({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+
+      //PIXIJS STUFF
+
+      //Background (Interactive)
+
+      let bg = new PIXI.Sprite(PIXI.Texture.WHITE);
+
+      bg.width = app.screen.width;
+      bg.height = app.screen.height;
+
+      bg.tint = 0xfacaca;
+
+      bg.interactive = true;
+      app.stage.addChild(bg);
+
+      //Player Sprite
+
+      const playerS  = new PIXI.Graphics();
+      playerS.beginFill(0xffffff);
+      playerS.drawCircle(30, 30, 30);
+      playerS.endFill();
+      playerS.pivot.x = 30;
+      playerS.pivot.y = 30;
+      playerS.x = 200;
+      playerS.y = 200;
+
+       //Mouse Interaction
+
+      //app.stage.interactive = true;
+      bg.on("click", (e) => {
+
+        console.log("CLICK");
+
+        let pos = e.data.global;
+
+        playerS.x = pos.x;
+        playerS.y = pos.y;
+
+      });
+
+      //Add Player Sprite
+
+      app.stage.addChild(playerS);
+
+      //USERNAME FORM STUFF
+
+
+      function setName() {
+        let name = document.getElementById("name").value;
+
+        if (name.length == 0) {
+          return;
+        }
+
+        document.getElementById("infoForm").setAttribute("class", "hidden");
+        socket.emit("profile/join", name);
+        document.getElementById("canvasContainer").appendChild(app.view);
+      }
+
+
+
+      socket.on('info/chatmessage', (message) => {
+        console.log(message);
+      });
+
+      socket.on('info/message', (message) => {
+        console.log("TO YOU: " + message);
+      });
+
+      socket.on('message', (sender, time, message) => {
+        //Egg
+      });
+
+      function sendMessage() {
+        socket.emit('message', messageBox.value);
+        //Egg
+      }
+
+    </script>
+
+</head>
+
+<body>
+
+  <div id="infoForm">
+      <label>Username:</label><br>
+      <input type="text" id="name"><br>
+      <input type="submit" id="submit" value="Submit" onclick="setName();">
+  </div>
+
+  <div id="canvasContainer"></div>
+
+</body>
+</html>

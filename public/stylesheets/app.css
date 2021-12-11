@@ -1,0 +1,28 @@
+#infoForm {
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-right: -50%;
+  transform: translate(-50%, -50%);
+  padding: 50px;
+  border: 1px solid black;
+  border-radius: 5px;
+
+  width: 12.5%;
+  height: 20%;
+
+}
+
+#infoForm input {
+  border-radius: 5px;
+  width: 100%;
+}
+
+#infoForm #submit {
+  margin-top: 5px;
+}
+
+body {
+  overflow: hidden;
+}
