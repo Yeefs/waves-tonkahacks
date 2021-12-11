@@ -16,6 +16,8 @@
 
       //PIXIJS STUFF
 
+      let students = {};
+
       //Background (Interactive)
 
       let bg = new PIXI.Sprite(PIXI.Texture.WHITE);
@@ -30,32 +32,105 @@
 
       //Player Sprite
 
-      const playerS  = new PIXI.Graphics();
-      playerS.beginFill(0xffffff);
-      playerS.drawCircle(30, 30, 30);
-      playerS.endFill();
-      playerS.pivot.x = 30;
-      playerS.pivot.y = 30;
-      playerS.x = 200;
-      playerS.y = 200;
+      function generatePlayer(name, inpX, inpY) {
+        let newPlayer = new PIXI.Graphics();
+        newPlayer.beginFill(0xffffff);
+        newPlayer.drawCircle(25, 25, 25);
+        newPlayer.endFill();
+        newPlayer.pivot.x = 25;
+        newPlayer.pivot.y = 25;
+        newPlayer.x = inpX;
+        newPlayer.y = inpY;
+        newPlayer.vx = 0;
+        newPlayer.vy = 0;
+        newPlayer.vMax = 1;
+        newPlayer.clickX = newPlayer.x;
+        newPlayer.clickY = newPlayer.y;
+        newPlayer.dx = 0;
+        newPlayer.dy = 0;
+        return newPlayer;
+      }
 
-       //Mouse Interaction
+      const selfStudent = generatePlayer("Egg", 200, 200);
 
-      //app.stage.interactive = true;
+      let state = function(){};
+
+      //GameLoop
+
+      gameLoop();
+
+      //Mouse Interaction
+
       bg.on("click", (e) => {
 
-        console.log("CLICK");
+        //console.log("CLICK");
 
         let pos = e.data.global;
 
-        playerS.x = pos.x;
-        playerS.y = pos.y;
+        //playerS.x = pos.x;
+        //playerS.y = pos.y;
+
+        selfStudent.clickX = pos.x;
+        selfStudent.clickY = pos.y;
+
+        socket.emit("movement/goto", pos.x, pos.y);
+
+        state = play;
 
       });
 
+      function gameLoop() {
+        requestAnimationFrame(gameLoop);
+        state();
+      }
+
+      //Velocity Play Stuff
+
+      function movePlayer(player, xTo, yTo) {
+        player.dx = player.x - xTo;
+        player.dy = player.y - yTo;
+
+        let total = Math.sqrt(player.dx * player.dx + player.dy * player.dy);
+
+        //playerS.vx = (playerS.dx)/100;
+        //playerS.vy = (playerS.dy)/100;
+        player.vx = (player.dx/total)*player.vMax;
+        player.vy = (player.dy/total)*player.vMax;
+
+        if (player.dx * player.dx + player.dy * player.dy <= 25) {
+          player.x = xTo;
+          player.y = yTo;
+          //state = function(){};
+        } else {
+          player.x -= player.vx;
+          player.y -= player.vy;
+        }
+      }
+
+      function play() {
+
+        movePlayer(selfStudent, selfStudent.clickX, selfStudent.clickY);
+        
+        for (let stud in students) {
+          movePlayer(students[stud], students[stud].clickX, students[stud].clickY);
+        }
+
+      }
+
+      function initalizePlayer(id, list) {
+          let stud = generatePlayer(list[0], list[1], list[2]);
+
+          if (id != socket.id){
+            app.stage.addChild(stud);
+          }
+
+          return stud;
+      }
+
       //Add Player Sprite
 
-      app.stage.addChild(playerS);
+      app.stage.addChild(selfStudent);
+
 
       //USERNAME FORM STUFF
 
@@ -68,11 +143,37 @@
         }
 
         document.getElementById("infoForm").setAttribute("class", "hidden");
-        socket.emit("profile/join", name);
+        socket.emit("profile/join", name, selfStudent.x, selfStudent.y);
+        socket.emit("info/getPlayerList");
         document.getElementById("canvasContainer").appendChild(app.view);
       }
 
+      socket.on("info/playerList", (people) => {
+        students = {};
+        for (let i in people) {
+          students[i] = initalizePlayer(i, people[i]);
+        }
+      });
 
+      socket.on("info/addPlayer", (id, list) => {
+        if (students[id] != undefined) {
+          console.log("Panic.");
+        }
+        students[id] = initalizePlayer(id, list);
+      });
+
+      socket.on("info/removePlayer", (id) => {
+        if (students[id] != undefined) {
+          app.stage.removeChild(students[id]);
+          delete students[id];
+        }
+      });
+
+
+      socket.on('movement/update', (id, list) => {
+        students[id].clickX = list[1];
+        students[id].clickY = list[2];
+      });
 
       socket.on('info/chatmessage', (message) => {
         console.log(message);

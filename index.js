@@ -22,21 +22,41 @@ io.on('connection', (socket) => {
   
   console.log("User connected: " + socket.id);
 
-  socket.on("profile/join", function(username) {
+  socket.on("profile/join", function(username, x, y) {
     console.log("SOMEBODY JOINED");
-    people[socket.id] = username;
+    //Double Checking to make sure one socket cannot create more than one student
+    if (people[socket.id] != undefined) {
+      io.emit("info/removePlayer", socket.id);
+    }
+    //FORMAT: Username, Current X, Current Y
+    people[socket.id] = [username, x, y];
     socket.emit("info/message", "You have connected.");
     io.emit("info/chatmessage", username + " has connected");
+    io.emit("info/addPlayer", socket.id, people[socket.id]);
   });
 
   socket.on("disconnect", function() {
-    io.emit("info/chatmessage", people[socket.id] + " has left.");
-    delete people[socket.id];
-  })
+    if (people[socket.id] != undefined) {
+      io.emit("info/chatmessage", people[socket.id][0] + " has left.");
+      io.emit("info/removePlayer", socket.id);
+      delete people[socket.id];
+    }
+  });
+
+  socket.on("info/getPlayerList", function() {
+    console.log("GETTING");
+    socket.emit("info/playerList", people);
+  });
+
+  socket.on("movement/goto", function(x, y) {
+    people[socket.id][1] = x;
+    people[socket.id][2] = y;
+    io.emit("movement/update", socket.id, people[socket.id]);
+  });
 
   socket.on('message', function(msg) {
     io.emit('message', "Guest", new Date().toTimeString(), msg);
-  })
+  });
 
 });
 
