@@ -14,6 +14,47 @@
         height: window.innerHeight
       });
 
+      //Table Stuff
+
+
+      function region(x1, y1, x2, y2, name) {
+    this.x1 = x1;
+    this.y1 = y1;
+    this.x2 = x2;
+    this.y2 = y2;
+    this.width = x2-x1;
+    this.height = y2-y1;
+    this.name = name;
+  }
+  
+  region.prototype.isIn = function(x, y) {
+    return ((Math.sign(this.x1 - x) != Math.sign(this.x2 - x)) && (Math.sign(this.y1 - y) != Math.sign(this.y2 - y)));
+  }
+  
+  region.prototype.toString = function() {
+    return `R: [${this.x1},${this.y1},${this.x2},${this.y2},${this.name}]`;
+  }
+  
+  //Width and Height parameters are in person-sized units
+  
+  function table(w, h, x, y, name) {
+    this.width = w;
+    this.height = h;
+    this.x = x;
+    this.y = y;
+    this.name = name;
+    this.region = new region(x-personSize, y-personSize, x + (w + 1) * personSize, y + (h + 1) * personSize, name + "TableRegion");
+  }
+  
+  table.prototype.toString = function() {
+    return `T: [${this.width},${this.height},${this.x},${this.y},${this.name}]`;
+  }
+  
+  function regionArgumentsFromList(str) {
+    return [str[0], str.substring(4,str.length-1).split(",")];
+  }
+
+
       //PIXIJS STUFF
 
       let students = {};
@@ -35,10 +76,10 @@
       function generatePlayer(name, inpX, inpY) {
         let newPlayer = new PIXI.Graphics();
         newPlayer.beginFill(0xffffff);
-        newPlayer.drawCircle(25, 25, 25);
+        newPlayer.drawCircle(15, 15, 15);
         newPlayer.endFill();
-        newPlayer.pivot.x = 25;
-        newPlayer.pivot.y = 25;
+        newPlayer.pivot.x = 15;
+        newPlayer.pivot.y = 15;
         newPlayer.x = inpX;
         newPlayer.y = inpY;
         newPlayer.vx = 0;
@@ -143,8 +184,9 @@
         }
 
         document.getElementById("infoForm").setAttribute("class", "hidden");
-        socket.emit("profile/join", name, selfStudent.x, selfStudent.y);
+        socket.emit("profile/join", name, selfStudent.x, selfStudent.y, "none");
         socket.emit("info/getPlayerList");
+        socket.emit("info/getObjects");
         document.getElementById("canvasContainer").appendChild(app.view);
       }
 
@@ -169,6 +211,10 @@
         }
       });
 
+      socket.on("info/objectList", function(objectList) {
+        //TODO: MAKE IT WORK
+        console.log(objectList);
+      });
 
       socket.on('movement/update', (id, list) => {
         students[id].clickX = list[1];
