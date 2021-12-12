@@ -8,18 +8,22 @@
 
     <script>
 
+      //Initalization of client-side socket.io and pixi.js
       const socket = io();
       const app = new PIXI.Application({
         width: window.innerWidth,
         height: window.innerHeight
       });
 
-      //Table Stuff
-
+      //Pixel size of a student
       const personSize = 40
+      //Current sitting state of the client
       let sitting = false;
 
 
+      //Table Functions
+
+      //This creates a region object depending on two corners (points) and a name
       function region(x1, y1, x2, y2, name) {
         this.x1 = parseInt(x1);
         this.y1 = parseInt(y1);
@@ -30,16 +34,12 @@
         this.name = name;
       }
   
-  region.prototype.isIn = function(x, y) {
-    return ((Math.sign(this.x1 - x) != Math.sign(this.x2 - x)) && (Math.sign(this.y1 - y) != Math.sign(this.y2 - y)));
-  }
+      //Checks if a point is within the region
+      region.prototype.isIn = function(x, y) {
+        return ((Math.sign(this.x1 - x) != Math.sign(this.x2 - x)) && (Math.sign(this.y1 - y) != Math.sign(this.y2 - y)));
+      }
   
-  region.prototype.toString = function() {
-    return `R: [${this.x1},${this.y1},${this.x2},${this.y2},${this.name}]`;
-  }
-  
-  //Width and Height parameters are in person-sized units
-  
+  //Creates a tabkes depending on the (Width and Height parameters) are in person-sized units
   function table(w, h, x, y, name) {
     this.width = parseInt(w);
     this.height = parseInt(h);
@@ -49,6 +49,7 @@
     this.region = new region(this.x-personSize, this.y-personSize, this.x + (this.width + personSize), this.y + (this.height + personSize), name + "TableRegion");
   }
 
+  //Command for generating a list of positions that are designated to have seats on a table
   table.prototype.seats = function() {
   let temp = [];
   for (let x = 0; x < this.width; x += personSize) {
@@ -61,22 +62,22 @@
   }
   return temp;
 }
-  
-  table.prototype.toString = function() {
-    return `T: [${this.width},${this.height},${this.x},${this.y},${this.name}]`;
-  }
-  
+
+  //Takes in the format of the table and region toString methods and returns it in a more usable format
   function regionArgumentsFromList(str) {
     return [str[0], str.substring(4,str.length-1).split(",")];
   }
 
-  let objects = {};
+  //Local variables, such as the classroom objects (tables and regions) rendered on the screen, seat objects, and current region that the client is on.
+  let objects = {}; 
   let seatReferences = [];
   let currentRegion = null;
 
+  //Takes in an object list and draws them on the screen
+
   function drawObjects(objectList) {
     
-    //Convert objects into a usable format
+    //Convert objects into a usable format through regionArgumentsFromList
 
     for (let obj in objectList) {
           let args = regionArgumentsFromList(objectList[obj]);
@@ -90,8 +91,7 @@
               objects[args[1][4]] = new region(...args[1]);
           }
 
-          //Visualize 
-        
+          //Visualize as a table or region depending what type of object it is
           for (let obj in objects) {
             let graphics = new PIXI.Graphics();
             if (obj.endsWith("Region")) {
@@ -113,10 +113,9 @@
     }
   }
 
-      //PIXIJS STUFF
+      //More pixijs functions
 
-      //Background (Interactive)
-
+      //Create interactive background
       let bg = new PIXI.Sprite(PIXI.Texture.WHITE);
       bg.tint = 0xfacaca;
       bg.interactive = true;
@@ -125,6 +124,7 @@
       let selfStudent;
       let state = function(){};
 
+      //Prepares certain pixi.js application elements, such as screen size and the player
       function prepareCanvasOptions() {
         bg.width = app.screen.width;
         bg.height = app.screen.height;
@@ -135,8 +135,7 @@
         gameLoop();
       }
 
-      //Player Sprite
-
+      //Generates a player sprite and returns the reference
       function generatePlayer(name, inpX, inpY) {
         let newPlayer = new PIXI.Graphics();
         newPlayer.beginFill(0xffffff);
@@ -156,6 +155,7 @@
         return newPlayer;
       }
 
+      //Visually creates a seat
       function createSeat(x,y) {
         let graphics = new PIXI.Graphics();
         graphics.lineStyle(2, 0xA06209);
@@ -169,15 +169,15 @@
         app.stage.addChild(graphics);
       }
 
+      //Takes in a list of seat positions and generates a seat at each one
       function generateSeats(table) {
         let allSeats = table.seats();
         for (let seat in allSeats) {
           createSeat(...allSeats[seat]);
         }
-        
-        //app.stage.addChild()
       }
 
+      //Updates currentRegion to a new region depending on position
       function updateRegion() {
         for (let obj in objects) {
           if (obj.endsWith("Region")) {
@@ -192,8 +192,8 @@
         socket.emit("info/setRegion", null);
       }
 
+      //Handles movement, depending on what is necessary 
       function moveTo(x, y, newSittingState) {
-
 
         if (sitting == true) {
           sitting = false;
@@ -211,6 +211,7 @@
         socket.emit("movement/goto", x, y);
       }
 
+      //If the seating is accepted, allows client to move to that seat
       socket.on("movement/sitAccept", (x, y) => {
         sitting = true;
 
@@ -220,59 +221,52 @@
         socket.emit("movement/goto", x, y);
       });
 
-      //Mouse Interaction
-
+      //Handles mouse interaction with background
       bg.on("click", (e) => {
-
-        //console.log("CLICK");
-
         let pos = e.data.global;
-
-        //playerS.x = pos.x;
-        //playerS.y = pos.y;
-
         moveTo(pos.x, pos.y)
-
       });
 
+      //Creates an update loop for the player 
       function gameLoop() {
         requestAnimationFrame(gameLoop);
         state();
       }
 
-      //Velocity Play Stuff
-
+      //Updates the current state of the player based on the direction and distance from the designated location
       function movePlayer(player, xTo, yTo) {
         player.dx = player.x - xTo;
         player.dy = player.y - yTo;
 
         let total = Math.sqrt(player.dx * player.dx + player.dy * player.dy);
 
-        //playerS.vx = (playerS.dx)/100;
-        //playerS.vy = (playerS.dy)/100;
         player.vx = (player.dx/total)*player.vMax;
         player.vy = (player.dy/total)*player.vMax;
 
+        //If the player is close enough snap to the desired location. If not, move closer to the desired location.
         if (player.dx * player.dx + player.dy * player.dy <= 25) {
           player.x = xTo;
           player.y = yTo;
-          //state = function(){};
         } else {
           player.x -= player.vx;
           player.y -= player.vy;
         }
       }
 
+      //play is called by the gameLoop to constantly update the students' positions
       function play() {
 
+        //Update self player
         movePlayer(selfStudent, selfStudent.clickX, selfStudent.clickY);
         
+        //Updates other players' positons on your screen
         for (let stud in students) {
           movePlayer(students[stud], students[stud].clickX, students[stud].clickY);
         }
 
       }
 
+      //Initalizes a new player, but only adds it if it is not your own player. Otherwise, there would be two copies of your character.
       function initalizePlayer(id, list) {
           let stud = generatePlayer(list[0], list[1], list[2]);
 
@@ -283,20 +277,22 @@
           return stud;
       }
 
-      //USERNAME FORM STUFF
-
-
+      //Upon setting and submitting your username, this function prepares the canvas (pixi.js) for viewing
       function setName() {
         let name = document.getElementById("name").value;
 
+        //Makes sure you cannot submit a blank name
         if (name.length == 0) {
           return;
         }
 
+        //Asks server for classroom objects
         socket.emit("info/getObjects");
 
+        //Runs prepareCanvasOptions function to prepare the canvas
         prepareCanvasOptions();
 
+        //Unhides the chat, sends the join event to the server, gets other players, etc.
         document.getElementById("infoForm").setAttribute("class", "hidden");
         socket.emit("profile/join", name, selfStudent.x, selfStudent.y, null);
         socket.emit("info/getPlayerList");
@@ -304,11 +300,13 @@
         document.getElementById("chatContainer").removeAttribute("class");
       }
 
+      //If the Selector Button is clicked, it swaps its text
       function swapSelector() {
         let scope = document.getElementById("scopeSelector");
         scope.innerText = (scope.innerText == "Global" ? "Table" : "Global");
       }
 
+      //Adds a message to the chat
       function addChatMessage(msg) {
         let msgBox = document.getElementById("chat");
         msgBox.innerHTML += `<p id="message">${msg}<br></p>`;
@@ -317,6 +315,7 @@
         }
       }
 
+      //Upon receiving the player list, updates the local player list to make sure they are all rendered
       socket.on("info/playerList", (people) => {
         students = {};
         for (let i in people) {
@@ -324,18 +323,19 @@
         }
       });
 
+      //Adds a new player to the player list
       socket.on("info/addPlayer", (id, list) => {
         if (students[id] != undefined) {
-          console.log("Panic.");
+          console.log("Player with socket already exists.");
         }
 
         //Double check that the player is already in the game before initalizing new players.
-
         if (students[socket.id] != undefined) {
           students[id] = initalizePlayer(id, list);
         }
       });
 
+      //Removes a player from the player list
       socket.on("info/removePlayer", (id) => {
         if (students[id] != undefined) {
           app.stage.removeChild(students[id]);
@@ -343,31 +343,37 @@
         }
       });
 
+      //Upon receiving the object list, draws the objects
       socket.on("info/objectList", function(objectList) {
         drawObjects(objectList);
         console.log(objectList);
       });
 
+      //Upon receiving that another player has moved, updates the new movement position of them
       socket.on('movement/update', (id, list) => {
         students[id].clickX = list[1];
         students[id].clickY = list[2];
       });
 
+      //Upon receiving a region message, if the message is in your region, then adds it to the chat
       socket.on('info/regionMessage', (region, sender, message) => {
         if (currentRegion == region) {
           addChatMessage(`[TABLE] ${sender}: ${message}`);
         }
       });
 
+      //Upon receiving a global message, add the global message to the chat
       socket.on('info/message', (sender, message) => {
         addChatMessage(`[GLOBAL] ${sender}: ${message}`);
       });
 
+      //Reads the text message input and scope when the send button is sent, and sends a message to the server with these arguments 
       function sendMessage() {
 
         let scope;
         let messageBox = document.getElementById("messageInput");
 
+        //Checks the marked scope type
         switch(document.getElementById("scopeSelector").innerText) {
           case "Table":
             scope = "region";
@@ -377,9 +383,11 @@
             break;
         };
 
+        //Makes sure the message being sent is not empty
         if (messageBox.value.length == 0) {
           return;
         }
+        //Sends message and clears the message box
           socket.emit('info/sendMessage', scope, messageBox.value);
           messageBox.value = "";
       }
