@@ -9,8 +9,8 @@
   border: 1px solid black;
   border-radius: 5px;
 
-  width: 25%;
-  height: 40%;
+  width: 12.5%;
+  height: 20%;
 
 }
 
@@ -24,5 +24,71 @@
 }
 
 body {
+ overflow: hidden;
+}
+
+#chatContainer{
+  position: fixed;
+  left: 15%;
+  bottom: -190px;
+  transform: translate(-50%, -50%);
+  margin: 0 auto;
+  background-color: #f8b3b3;
+  width: 500px;
+  height: 400px;
+  border-radius: 10px;
+  color: darkslategray;
+}
+
+#chatContainer #chat {
+  size: 500px 300px;
   overflow: hidden;
+  background-color: #f8b3b3;
+  border-radius: 0px;
+  margin: 10px;
+}
+
+#chatContainer #message {
+  margin: 10px;
+}
+
+
+#chatContainer #submitButton {
+  height: 40px;
+  width: 20%;
+  position: fixed;
+  right: -5%;
+  bottom: 0px;
+  transform: translate(-50%, -50%);
+  margin: 0 auto;
+  border-radius: 0px;
+  border: 0px;
+  background-color: #f69b9b;
+}
+
+#chatContainer #scopeSelector {
+  height: 40px;
+  width: 20%;
+  position: fixed;
+  right: -5%;
+  bottom: 40px;
+  transform: translate(-50%, -50%);
+  margin: 0 auto;
+  border-radius: 0px;
+  border: 0px;
+  background-color: #f69b9b;
+}
+
+
+#chatContainer input {
+  height: 40px;
+  width: 70%;
+  position: fixed;
+  left: 40%;
+  bottom: 0px;
+  transform: translate(-50%, -50%);
+  margin: 0 auto;
+  border: 0px;
+  border-radius: 0px;
+  background-color: #f69b9b;
 }
